@@ -43,7 +43,7 @@ sub branch_status {
     '--left-right',
     "$branch1...$branch2"
   );
-  open my $fh, '-|', @cmd
+  open my $fh, '-|', $self->quote_cmd(@cmd)
     or croak "Can't get branch status: @cmd";
   while (my $line = <$fh>) {
     if ($line =~ /^</) { $status->{behind}++ }
@@ -62,7 +62,7 @@ sub no_merged_branch_h {
     my $rep = $self->rep($user, $project);
     
     my @cmd = $self->cmd($user, $project, 'branch', '--no-merged');
-    open my $fh, '-|', @cmd or return;
+    open my $fh, '-|', $self->quote_cmd(@cmd) or return;
     while (my $branch_name = $self->_dec(scalar <$fh>)) {
       $branch_name =~ s/^\*//;
       $branch_name =~ s/^\s*//;
@@ -79,7 +79,7 @@ sub branches {
   
   # Branches
   my @cmd = $self->cmd($user, $project, 'branch');
-  open my $fh, '-|', @cmd or return;
+  open my $fh, '-|', $self->quote_cmd(@cmd) or return;
   my $branches = [];
   my $start;
   my $no_merged_branches_h;
@@ -108,7 +108,7 @@ sub branches_count {
   
   # Branches count
   my @cmd = $self->cmd($user, $project, 'branch');
-  open my $fh, '-|', @cmd or return;
+  open my $fh, '-|', $self->quote_cmd(@cmd) or return;
   my @branches = <$fh>;
   my $branches_count = @branches;
   
@@ -144,7 +144,7 @@ sub authors {
     '--',
     $file
   );
-  open my $fh, "-|", @cmd
+  open my $fh, "-|", $self->quote_cmd(@cmd)
     or croak 500, "Open git-cat-file failed";
   my $authors = {};
   while (my $line = $self->_dec(<$fh>)) {
@@ -172,7 +172,7 @@ sub blame {
     '--',
     $file
   );
-  open my $fh, '-|', @cmd
+  open my $fh, '-|', $self->quote_cmd(@cmd)
     or croak "Can't git blame --line-porcelain";
   
   # Format lines
@@ -252,7 +252,7 @@ sub blob {
     'blob',
     $hash
   );
-  open my $fh, '-|', @cmd
+  open my $fh, '-|', $self->quote_cmd(@cmd)
     or croak "Can't cat $file, $hash";
   
   # Format lines
@@ -283,7 +283,7 @@ sub blob_diffs {
     $rev2,
     '--'
   );
-  open my $fh, '-|', @cmd
+  open my $fh, '-|', $self->quote_cmd(@cmd)
     or croak('Open self-diff-tree failed');
   my @diff_tree;
   while (my $line = $self->_dec(scalar <$fh>)) {
@@ -317,7 +317,7 @@ sub blob_diffs {
       (defined $from_file ? $from_file : ()),
       $file
     );
-    open my $fh, '-|', @cmd
+    open my $fh, '-|', $self->quote_cmd(@cmd)
       or croak('Open self-diff-tree failed');
     my @lines = map { $self->_dec($_) } <$fh>;
     close $fh;
@@ -371,7 +371,7 @@ sub blob_mime_type {
     'blob',
     $hash
   );
-  open my $fh, '-|', @cmd
+  open my $fh, '-|', $self->quote_cmd(@cmd)
     or croak "Can't cat $file, $hash";
 
   return 'text/plain' unless $fh;
@@ -417,7 +417,7 @@ sub blob_mode {
     '--',
     $file
   );
-  open my $fh, '-|', @cmd
+  open my $fh, '-|', $self->quote_cmd(@cmd)
     or croak 'Open git-ls-tree failed';
   my $line = $self->_dec(scalar <$fh>);
   close $fh or return;
@@ -431,7 +431,7 @@ sub blob_raw {
   
   # Blob raw
   my @cmd = $self->cmd($user, $project, 'cat-file', 'blob', "$rev:$path");
-  open my $fh, "-|", @cmd
+  open my $fh, "-|", $self->quote_cmd(@cmd)
     or croak 500, "Open git-cat-file failed";
   local $/;
   my $blob_raw = scalar <$fh>;
@@ -452,7 +452,7 @@ sub blob_size {
     '-s',
     "$rev:$file"
   );
-  open my $fh, "-|", @cmd
+  open my $fh, "-|", $self->quote_cmd(@cmd)
     or croak 500, "Open cat-file failed";
   my $size = $self->_dec(scalar <$fh>);
   chomp $size;
@@ -479,7 +479,7 @@ sub commits_number {
   
   # Command "git diff-tree"
   my @cmd = $self->cmd($user, $project, 'shortlog', '-s', $ref);
-  open my $fh, "-|", @cmd
+  open my $fh, "-|", $self->quote_cmd(@cmd)
     or croak 500, "Open git-shortlog failed";
   my @commits_infos = map { chomp; $self->_dec($_) } <$fh>;
   close $fh or croak 'Reading git-shortlog failed';
@@ -500,7 +500,7 @@ sub exists_branch {
   # Exists branch
   my $home = $self->rep_home;
   my @cmd = $self->cmd($user, $project, 'branch');
-  open my $fh, "-|", @cmd
+  open my $fh, "-|", $self->quote_cmd(@cmd)
     or croak 'git branch failed';
   local $/;
   my $branches = <$fh>;
@@ -570,7 +570,7 @@ sub diff_tree {
     $rev,
     '--'
   );
-  open my $fh, "-|", @cmd
+  open my $fh, "-|", $self->quote_cmd(@cmd)
     or croak 500, "Open git-diff-tree failed";
   my @diff_tree = map { chomp; $self->_dec($_) } <$fh>;
   close $fh or croak 'Reading git-diff-tree failed';
@@ -654,7 +654,7 @@ sub forward_commits {
     '--left-right',
     "$rev1...$rev2"
   );
-  open my $fh, '-|', @cmd
+  open my $fh, '-|', $self->quote_cmd(@cmd)
     or croak "Can't get info: @cmd";
   my $commits = [];
   while (my $line = <$fh>) {
@@ -681,7 +681,7 @@ sub path_to_hash {
     '--',
     $path
   );
-  open my $fh, '-|', @cmd
+  open my $fh, '-|', $self->quote_cmd(@cmd)
     or croak 'Open git-ls-tree failed';
   my $line = $self->_dec(scalar <$fh>);
   close $fh or return;
@@ -704,7 +704,8 @@ sub last_activity {
     '--sort=-committerdate',
     '--count=1', 'refs/heads'
   );
-  open my $fh, '-|', @cmd or return;
+  
+  open my $fh, '-|', $self->quote_cmd(@cmd) or return;
   my $most_recent = $self->_dec(scalar <$fh>);
   close $fh or return;
   
@@ -723,7 +724,7 @@ sub no_merged_branches_count {
   my ($self, $user, $project) = @_;
   
   my @cmd = $self->cmd($user, $project, 'branch', '--no-merged');
-  open my $fh, '-|', @cmd or return;
+  open my $fh, '-|', $self->quote_cmd(@cmd) or return;
   my @branches = <$fh>;
   my $branches_count = @branches;
   
@@ -738,7 +739,7 @@ sub path_by_id {
   
   # Command "git ls-tree"
   my @cmd = $self->cmd($user, $project, 'ls-tree', '-r', '-t', '-z', $base);
-  open my $fh, '-|', @cmd or return;
+  open my $fh, '-|', $self->quote_cmd(@cmd) or return;
 
   # Get path
   local $/ = "\0";
@@ -766,7 +767,7 @@ sub parse_rev_path {
     'show-ref',
     '--dereference'
   );
-  open my $fh, '-|', @cmd
+  open my $fh, '-|', $self->quote_cmd(@cmd)
     or return;
   my $refs = [];
   while (my $line = $self->_dec(scalar <$fh>)) {
@@ -815,7 +816,7 @@ sub object_type {
     '-t',
     $rev
   );
-  open my $fh, '-|', @cmd  or return;
+  open my $fh, '-|', $self->quote_cmd(@cmd)  or return;
   my $type = $self->_dec(scalar <$fh>);
   close $fh or return;
   chomp $type;
@@ -883,7 +884,7 @@ sub references {
     )
   );
   
-  open my $fh, '-|', @cmd
+  open my $fh, '-|', $self->quote_cmd(@cmd)
     or return;
   
   # Parse references
@@ -944,7 +945,7 @@ sub tags_count {
     ($limit ? '--count='.($limit+1) : ()),
     'refs/tags'
   );
-  open my $fh, '-|', @cmd or return;
+  open my $fh, '-|', $self->quote_cmd(@cmd) or return;
   
   # Tags count
   my @lines = <$fh>;
@@ -970,7 +971,7 @@ sub tags {
       . '%(*objectname) %(*objecttype) %(subject)%00%(creator)',
     'refs/tags'
   );
-  open my $fh, '-|', @cmd or return;
+  open my $fh, '-|', $self->quote_cmd(@cmd) or return;
   
   
   # Parse Tags
@@ -1059,7 +1060,7 @@ sub last_change_commit {
     '--',
     $file
   );
-  open my $fh, '-|', @cmd
+  open my $fh, '-|', $self->quote_cmd(@cmd)
     or croak 'Open git-log failed';
   
   local $/;
@@ -1168,7 +1169,7 @@ sub get_commit {
     $id,
     '--'
   );
-  open my $fh, '-|', @cmd
+  open my $fh, '-|', $self->quote_cmd(@cmd)
     or croak 'Open git-rev-list failed';
   
   # Parse commit
@@ -1271,6 +1272,16 @@ sub parse_commit_text {
   return \%commit;
 }
 
+sub quote_cmd {
+  my ($self, @cmd) = @_;
+  
+  if ($^O eq 'MSWin32') {
+    my $cmd_q = join ' ', map { $_ =~ s/"//g; q{"$_"} } @cmd;
+    return ($cmd_q);
+  }
+  else { return @cmd }
+}
+
 sub get_commits {
   my ($self, $user, $project, $rev, $maxcount, $skip, $file, @args) = @_;
 
@@ -1289,7 +1300,7 @@ sub get_commits {
     '--',
     (defined $file && length $file ? ($file) : ())
   );
-  open my $fh, '-|', @cmd
+  open my $fh, '-|', $self->quote_cmd(@cmd)
     or croak 'Open git-rev-list failed';
   
   # Prase Commits text
@@ -1459,7 +1470,7 @@ sub separated_commit {
     $rev1,
     $rev2
   );
-  open my $fh, "-|", @cmd
+  open my $fh, "-|", $self->quote_cmd(@cmd)
     or croak 500, "Open git-show-branch failed";
 
   my $commits = [];
@@ -1545,7 +1556,7 @@ sub trees {
     ($show_sizes ? '-l' : ()),
     $tid
   );
-  open my $fh, '-|', @cmd
+  open my $fh, '-|', $self->quote_cmd(@cmd)
     or $self->croak('Open git-ls-tree failed');
   {
     local $/ = "\0";
